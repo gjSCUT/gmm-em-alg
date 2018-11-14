@@ -6,10 +6,11 @@ import numpy as np
 
 TIME = 100
 K = 2
+paths = ["data/1", "data/2", "data/3"]
 
 
 def main():
-    data = init_data()
+    data = init_data(paths[index])
     mu, cov, alpha = init_params(data)
     p, w = gmm_em(data, mu, cov, alpha)
     for i in range(TIME):
@@ -19,16 +20,12 @@ def main():
     display(data, p, y)
 
 
-def init_data():
-    data1 = sio.loadmat("data/1")
-    data2 = sio.loadmat("data/2")
-    data3 = sio.loadmat("data/3")
-    data = np.hstack((data1['x'], data1['y'])) + np.hstack((data2['x'], data2['y'])) + np.hstack((data3['x'], data3['y']))
-    data = np.matrix(data, copy=True)
+def init_data(path):
+    mat = sio.loadmat(path)
+    data = np.matrix(np.hstack((mat['x'], mat['y'])), copy=True)
     for i in range(data.shape[1]):
-        max_ = data[:, i].max()
-        min_ = data[:, i].min()
-        data[:, i] = (data[:, i] - min_) / (max_ - min_)
+        d_max, d_min = data[:, i].max(), data[:, i].min()
+        data[:, i] = (data[:, i] - d_min) / (d_max - d_min)
     return data
 
 
@@ -42,23 +39,12 @@ def init_params(data):
 
 def display(data, p, y):
     n = data.shape[0]
-    n1 = [[], [], []]
-    n2 = [[], [], []]
-    for i in range(n):
-        if y[i] == 0:
-            n1[0].append(data[i, 0])
-            n1[1].append(data[i, 1])
-            n1[2].append(np.asarray(p[i])[0, 0])
-        elif y[i] == 1:
-            n2[0].append(data[i, 0])
-            n2[1].append(data[i, 1])
-            n2[2].append(np.asarray(p[i])[0, 1])
-    result1 = np.array(n1)
-    result2 = np.array(n2)
+    result1 = np.array([[data[i, 0], data[i, 1], np.asarray(p[i])[0, 0]] for i in range(n) if y[i] == 0])
+    result2 = np.array([[data[i, 0], data[i, 1], np.asarray(p[i])[0, 1]] for i in range(n) if y[i] == 1])
 
     ax = plt.figure().add_subplot(111, projection='3d')
-    ax.scatter(result1[0, :], result1[1, :], result1[2, :], marker='o', c='blue')
-    ax.scatter(result2[0, :], result2[1, :], result2[2, :], marker='o', c='red')
+    ax.scatter(result1[:, 0], result1[:, 1], result1[:, 2], marker='o', c='blue')
+    ax.scatter(result2[:, 0], result2[:, 1], result2[:, 2], marker='o', c='red')
     plt.title("GMM EM Algorithm")
     plt.show()
 
@@ -98,6 +84,7 @@ def maximize(data, w):
     return mu, cov, alpha
 
 
-main()
+for index in range(len(paths)):
+    main()
 
 
